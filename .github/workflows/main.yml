@@ -1,0 +1,40 @@
+name: Deploy to Minikube
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install Minikube
+      uses: medyagh/setup-minikube@master
+
+    - name: Start Minikube
+      run: |
+        minikube start
+        minikube update-context
+
+    - name: Set up Docker environment to use Minikube's Docker daemon
+      run: |
+        eval $(minikube docker-env)
+
+    - name: Build and push Docker image to Minikube
+      run: |
+        docker build -t harshh04/flask-app:latest .
+        echo "Verifying that image is loaded in Minikube:"
+        docker images
+
+    - name: Apply Kubernetes manifests
+      run: |
+        kubectl apply -f deployment.yaml
+        kubectl apply -f service.yaml
+
+    - name: Check services and deployments
+      run: |
+        kubectl get svc,deploy
